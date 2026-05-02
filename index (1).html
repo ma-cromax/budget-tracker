@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monthly Budget Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222535;
+    --border: #2e3245;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --danger: #ff6b6b;
+    --warning: #ffd93d;
+    --text: #e8eaf0;
+    --text2: #8b90a7;
+    --text3: #555972;
+    --green-bg: rgba(0,212,170,0.1);
+    --green-text: #00d4aa;
+    --red-bg: rgba(255,107,107,0.1);
+    --red-text: #ff6b6b;
+    --yellow-bg: rgba(255,217,61,0.1);
+    --yellow-text: #ffd93d;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 60px; }
+
+  /* Header */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+  .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .header h1 span { color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .save-badge { font-size: 11px; font-family: 'DM Mono', monospace; padding: 4px 10px; border-radius: 20px; background: var(--green-bg); color: var(--green-text); border: 1px solid rgba(0,212,170,0.2); transition: all 0.3s; }
+  .save-badge.saving { background: var(--yellow-bg); color: var(--yellow-text); border-color: rgba(255,217,61,0.2); }
+  .save-badge.error { background: var(--red-bg); color: var(--red-text); border-color: rgba(255,107,107,0.2); }
+  .header-btn { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-family: 'DM Sans', sans-serif; font-weight: 500; transition: opacity 0.2s; }
+  .header-btn:hover { opacity: 0.85; }
+  .header-btn.secondary { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .header-btn.secondary:hover { color: var(--text); border-color: var(--accent); }
+
+  /* Container */
+  .container { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Month Block */
+  .month-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px; overflow: hidden; }
+  .month-hdr { background: var(--surface2); padding: 12px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .month-hdr input { flex: 1; background: transparent; border: none; outline: none; font-size: 15px; font-weight: 500; color: var(--text); font-family: 'DM Sans', sans-serif; }
+  .month-hdr input::placeholder { color: var(--text3); }
+  .rm-month { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 12px; padding: 4px 8px; border-radius: 6px; transition: all 0.2s; }
+  .rm-month:hover { background: var(--red-bg); color: var(--danger); }
+
+  /* Section labels */
+  .sec-lbl { font-size: 11px; font-weight: 500; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 16px 6px; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; color: var(--text3); font-weight: 400; padding: 5px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  th.r { text-align: right; }
+  td { padding: 5px 14px; border-bottom: 1px solid rgba(46,50,69,0.5); font-size: 13px; }
+  td.r { text-align: right; font-family: 'DM Mono', monospace; font-size: 12px; }
+  td input[type=text] { width: 100%; background: transparent; border: none; outline: none; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; }
+  td input[type=text]::placeholder { color: var(--text3); }
+  td input[type=number] { width: 100%; background: transparent; border: none; outline: none; font-size: 12px; color: var(--text); font-family: 'DM Mono', monospace; text-align: right; }
+  td input[type=number]::placeholder { color: var(--text3); }
+  td select { background: transparent; border: none; outline: none; font-size: 12px; color: var(--text2); font-family: 'DM Sans', sans-serif; cursor: pointer; width: 100%; }
+  td select option { background: var(--surface2); }
+  .tot-row td { font-weight: 500; background: var(--surface2); font-family: 'DM Mono', monospace; font-size: 12px; border-bottom: none; }
+  .tot-row td:first-child { font-family: 'DM Sans', sans-serif; font-size: 13px; }
+  .del-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 11px; padding: 2px 5px; border-radius: 4px; transition: all 0.15s; }
+  .del-btn:hover { color: var(--danger); background: var(--red-bg); }
+  .add-row-btn { width: 100%; background: transparent; border: none; border-top: 1px dashed var(--border); color: var(--text3); font-size: 12px; padding: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+  .add-row-btn:hover { color: var(--accent); background: rgba(108,99,255,0.05); }
+
+  /* Carried */
+  .carried-wrap { padding: 10px 16px; border-top: 1px solid var(--border); }
+  .carried-wrap label { font-size: 11px; color: var(--text3); display: block; margin-bottom: 5px; }
+  .carried-wrap input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 7px 12px; font-size: 13px; color: var(--yellow-text); font-family: 'DM Mono', monospace; outline: none; transition: border-color 0.2s; }
+  .carried-wrap input:focus { border-color: var(--accent); }
+
+  /* Summary */
+  .sum-wrap { border-top: 1px solid var(--border); }
+  .sum-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; font-size: 13px; border-bottom: 1px solid rgba(46,50,69,0.4); }
+  .sum-row:last-child { border-bottom: none; font-weight: 500; }
+  .sum-row .val { font-family: 'DM Mono', monospace; font-size: 12px; }
+  .sum-row.green { background: var(--green-bg); color: var(--green-text); }
+  .sum-row.red { background: var(--red-bg); color: var(--red-text); }
+  .sum-row.yellow { background: var(--yellow-bg); color: var(--yellow-text); }
+
+  /* Owing */
+  .owing-sec { border-top: 1px solid var(--border); }
+  .owing-note { font-size: 11px; color: var(--text3); padding: 5px 16px 10px; font-family: 'DM Mono', monospace; }
+
+  /* Add month */
+  .add-month-wrap { text-align: center; padding: 8px 0 24px; }
+  .add-month-wrap button { background: transparent; border: 1px dashed var(--border); color: var(--text2); padding: 10px 28px; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+  .add-month-wrap button:hover { border-color: var(--accent); color: var(--accent); background: rgba(108,99,255,0.05); }
+
+  /* Empty */
+  .empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+  .empty p { font-size: 14px; margin-top: 8px; }
+
+  @media (max-width: 600px) {
+    .header { padding: 12px 16px; }
+    .header h1 { font-size: 15px; }
+    .container { padding: 16px 12px; }
+    td { padding: 5px 10px; }
+    th { padding: 5px 10px; }
+  }
+  @media print {
+    .header-btn, .add-row-btn, .add-month-wrap, .rm-month, .del-btn { display: none !important; }
+    body { background: white; color: black; }
+    .month-block { border: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📒 Budget <span>Tracker</span></h1>
+  <div class="header-right">
+    <span class="save-badge" id="badge">Loading...</span>
+    <button class="header-btn secondary" onclick="window.print()">🖨 Print</button>
+    <button class="header-btn" onclick="saveNow()">💾 Save Now</button>
+  </div>
+</div>
+
+<div class="container">
+  <div id="root"></div>
+  <div class="add-month-wrap">
+    <button onclick="addMonth()">＋ Add New Month</button>
+  </div>
+</div>
+
+<script>
+const SKEY = 'budget_tracker_gh_v1';
+let state = { months: [] };
+let saveTimer = null;
+
+// ── Save / Load ───────────────────────────────────────────
+function saveNow() {
+  try {
+    localStorage.setItem(SKEY, JSON.stringify(state));
+    setBadge('Saved ✓', '');
+  } catch(e) {
+    setBadge('Save failed!', 'error');
+  }
+}
+
+function queueSave() {
+  setBadge('Saving...', 'saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 700);
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(SKEY);
+    if (raw) state = JSON.parse(raw);
+  } catch(e) {}
+  if (!state.months || state.months.length === 0) {
+    state.months = [makeMonth()];
+  }
+  renderAll();
+  setBadge('Saved ✓', '');
+}
+
+function setBadge(text, cls) {
+  const el = document.getElementById('badge');
+  if (el) { el.textContent = text; el.className = 'save-badge ' + cls; }
+}
+
+// ── Data ──────────────────────────────────────────────────
+function uid() { return Date.now() + '_' + Math.random().toString(36).slice(2); }
+
+function makeMonth() {
+  return {
+    id: uid(), name: '',
+    income: [{item:'Salary',amt:''},{item:'',amt:''}],
+    expenses: [{item:'',amt:''},{item:'',amt:''}],
+    carried: '',
+    owing: []
+  };
+}
+
+function fmt(n) { return Math.round(Math.abs(n)).toLocaleString('en-NG'); }
+function sign(n) { return n >= 0 ? '+' : '-'; }
+function sumArr(arr) { return arr.reduce((s,r) => s + (parseFloat(r.amt||r[1]) || 0), 0); }
+
+// ── Actions ───────────────────────────────────────────────
+function addMonth() {
+  state.months.push(makeMonth());
+  queueSave(); renderAll();
+  setTimeout(() => window.scrollTo({top: document.body.scrollHeight, behavior:'smooth'}), 50);
+}
+
+function removeMonth(mid) {
+  if (state.months.length === 1) { alert('You need at least one month.'); return; }
+  if (!confirm('Remove this month?')) return;
+  state.months = state.months.filter(m => m.id !== mid);
+  queueSave(); renderAll();
+}
+
+function addRow(mid, section) {
+  const m = find(mid);
+  if (m) { m[section].push({item:'',amt:''}); queueSave(); rerender(mid); }
+}
+
+function delRow(mid, section, idx) {
+  const m = find(mid);
+  if (m) { m[section].splice(idx, 1); queueSave(); rerender(mid); }
+}
+
+function addOwing(mid) {
+  const m = find(mid);
+  if (m) { m.owing.push({name:'',amt:'',status:'pending'}); queueSave(); rerender(mid); }
+}
+
+function delOwing(mid, idx) {
+  const m = find(mid);
+  if (m) { m.owing.splice(idx, 1); queueSave(); rerender(mid); }
+}
+
+function updateField(mid, section, idx, key, val) {
+  const m = find(mid);
+  if (m) { m[section][idx][key] = val; queueSave(); rerender(mid); }
+}
+
+function updateMeta(mid, key, val) {
+  const m = find(mid);
+  if (m) { m[key] = val; queueSave(); if(key==='carried') rerender(mid); }
+}
+
+function updateOwing(mid, idx, key, val) {
+  const m = find(mid);
+  if (m) { m.owing[idx][key] = val; queueSave(); rerender(mid); }
+}
+
+function find(mid) { return state.months.find(m => m.id === mid); }
+
+// ── Render ────────────────────────────────────────────────
+function renderAll() {
+  const root = document.getElementById('root');
+  root.innerHTML = '';
+  state.months.forEach(m => root.appendChild(buildEl(m)));
+}
+
+function rerender(mid) {
+  const m = find(mid);
+  if (!m) return;
+  const old = document.getElementById('m_' + mid);
+  if (old) old.replaceWith(buildEl(m));
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function buildEl(m) {
+  const div = document.createElement('div');
+  div.className = 'month-block';
+  div.id = 'm_' + m.id;
+
+  const incTotal = sumArr(m.income);
+  const expTotal = sumArr(m.expenses);
+  const carried  = parseFloat(m.carried) || 0;
+  const balance  = incTotal - expTotal;
+  const net      = balance + carried;
+  const owingTotal   = sumArr(m.owing);
+  const owingPaid    = m.owing.filter(r=>r.status==='paid').reduce((s,r)=>s+(parseFloat(r.amt)||0),0);
+  const owingPending = owingTotal - owingPaid;
+
+  const incRows = m.income.map((r,i) => `
+    <tr>
+      <td><input type="text" value="${esc(r.item)}" placeholder="Income item..." oninput="updateField('${m.id}','income',${i},'item',this.value)"></td>
+      <td class="r"><input type="number" value="${esc(r.amt)}" placeholder="0" oninput="updateField('${m.id}','income',${i},'amt',this.value)"></td>
+      <td><button class="del-btn" onclick="delRow('${m.id}','income',${i})">✕</button></td>
+    </tr>`).join('');
+
+  const expRows = m.expenses.map((r,i) => `
+    <tr>
+      <td><input type="text" value="${esc(r.item)}" placeholder="Expense item..." oninput="updateField('${m.id}','expenses',${i},'item',this.value)"></td>
+      <td class="r"><input type="number" value="${esc(r.amt)}" placeholder="0" oninput="updateField('${m.id}','expenses',${i},'amt',this.value)"></td>
+      <td><button class="del-btn" onclick="delRow('${m.id}','expenses',${i})">✕</button></td>
+    </tr>`).join('');
+
+  const owingRows = m.owing.map((r,i) => `
+    <tr>
+      <td><input type="text" value="${esc(r.name)}" placeholder="Name..." oninput="updateOwing('${m.id}',${i},'name',this.value)"></td>
+      <td class="r"><input type="number" value="${esc(r.amt)}" placeholder="0" oninput="updateOwing('${m.id}',${i},'amt',this.value)"></td>
+      <td><select onchange="updateOwing('${m.id}',${i},'status',this.value)">
+        <option value="pending"${r.status==='pending'?' selected':''}>⏳ Pending</option>
+        <option value="paid"${r.status==='paid'?' selected':''}>✅ Paid</option>
+        <option value="partial"${r.status==='partial'?' selected':''}>🔄 Partial</option>
+      </select></td>
+      <td><button class="del-btn" onclick="delOwing('${m.id}',${i})">✕</button></td>
+    </tr>`).join('');
+
+  const balCls = balance >= 0 ? 'green' : 'red';
+  const netCls = net >= 0 ? 'green' : 'red';
+
+  div.innerHTML = `
+    <div class="month-hdr">
+      <span>📅</span>
+      <input type="text" value="${esc(m.name)}" placeholder="Month / Period (e.g. May 2026)" oninput="updateMeta('${m.id}','name',this.value)">
+      <button class="rm-month" onclick="removeMonth('${m.id}')">✕ Remove</button>
+    </div>
+
+    <div class="sec-lbl">💰 Income</div>
+    <table>
+      <thead><tr><th style="width:58%">Item</th><th class="r" style="width:37%">Amount (₦)</th><th style="width:5%"></th></tr></thead>
+      <tbody>${incRows}</tbody>
+      <tfoot><tr class="tot-row"><td>Total Income</td><td class="r">₦${fmt(incTotal)}</td><td></td></tr></tfoot>
+    </table>
+    <button class="add-row-btn" onclick="addRow('${m.id}','income')">+ Add income row</button>
+
+    <div class="sec-lbl" style="margin-top:4px;">💸 Expenses</div>
+    <table>
+      <thead><tr><th style="width:58%">Item</th><th class="r" style="width:37%">Amount (₦)</th><th style="width:5%"></th></tr></thead>
+      <tbody>${expRows}</tbody>
+      <tfoot><tr class="tot-row"><td>Total Expenses</td><td class="r">₦${fmt(expTotal)}</td><td></td></tr></tfoot>
+    </table>
+    <button class="add-row-btn" onclick="addRow('${m.id}','expenses')">+ Add expense row</button>
+
+    <div class="carried-wrap">
+      <label>Carried deficit/surplus from previous period — use negative for deficit (e.g. -15540)</label>
+      <input type="number" value="${esc(m.carried)}" placeholder="0" oninput="updateMeta('${m.id}','carried',this.value)">
+    </div>
+
+    <div class="sum-wrap">
+      <div class="sum-row"><span>Total Income</span><span class="val">₦${fmt(incTotal)}</span></div>
+      <div class="sum-row"><span>Total Expenses</span><span class="val">₦${fmt(expTotal)}</span></div>
+      <div class="sum-row ${balCls}"><span>${balance>=0?'Balance':'Deficit'} This Period</span><span class="val">${sign(balance)}₦${fmt(balance)}</span></div>
+      ${carried!==0?`<div class="sum-row yellow"><span>Carried Over</span><span class="val">${sign(carried)}₦${fmt(carried)}</span></div>`:''}
+      <div class="sum-row ${netCls}"><span>Net Balance</span><span class="val">${sign(net)}₦${fmt(net)}</span></div>
+    </div>
+
+    <div class="owing-sec">
+      <div class="sec-lbl" style="padding-top:8px;">🤝 People Owing Me</div>
+      <table>
+        <thead><tr><th style="width:36%">Person</th><th class="r" style="width:28%">Amount (₦)</th><th style="width:26%">Status</th><th style="width:10%"></th></tr></thead>
+        <tbody>${owingRows || '<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:8px 14px;">No entries yet</td></tr>'}</tbody>
+        <tfoot><tr class="tot-row"><td>Total Owed</td><td class="r">₦${fmt(owingTotal)}</td><td></td><td></td></tr></tfoot>
+      </table>
+      <button class="add-row-btn" onclick="addOwing('${m.id}')">+ Add person</button>
+      ${owingTotal>0?`<div class="owing-note">Recovered: <strong style="color:var(--green-text)">₦${fmt(owingPaid)}</strong> &nbsp;|&nbsp; Still pending: <strong style="color:var(--danger)">₦${fmt(owingPending)}</strong></div>`:''}
+    </div>`;
+
+  return div;
+}
+
+window.onload = loadData;
+</script>
+</body>
+</html>
